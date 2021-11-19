@@ -42,5 +42,4 @@ services:
 
 networks:
   proxy-tier:
-    external:
-        name: ${PROXY_NETWORK}
+    name: ${PROXY_NETWORK}
