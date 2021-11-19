@@ -1,0 +1,46 @@
+version: '3'
+
+services:
+  traefik:
+    image: traefik:v2.5
+    volumes: 
+      - /etc/localtime:/etc/localtime:ro
+      # SECURITY ISSUE
+      - "/var/run/docker.sock:/var/run/docker.sock:ro"
+      - "./traefik.yml:/traefik.yml:ro"
+    hostname: "traefik"
+    ports: 
+      - 127.0.0.1:80:80
+      - 127.0.0.1:443:443
+      - 127.0.0.1:8080:8080
+    networks:
+      - proxy-tier
+
+  whoami:
+    image: "traefik/whoami"
+    labels:
+      # Explicitly tell traefik to expose this container
+      - "traefik.enable=true"
+      # The domain the service will respond to
+      - "traefik.http.routers.whoami.rule=Host(`whoami.$DOMAIN`)"
+      # Allow request only from the predefined entrypoint
+      - "traefik.http.routers.whoami.entrypoints=web"
+    networks:
+      - proxy-tier
+    
+  nginx:
+    image: nginx:latest
+    labels:
+      # Explicitly tell traefik to expose this container
+      - "traefik.enable=true"
+      # The domain the service will respond to
+      - "traefik.http.routers.nginx.rule=Host(`$DOMAIN`, `www.$DOMAIN`, `felix.$DOMAIN`)"
+      # Allow request only from the predefined entrypoint
+      - "traefik.http.routers.nginx.entrypoints=web"
+    networks:
+      - proxy-tier
+
+networks:
+  proxy-tier:
+    external:
+        name: ${PROXY_NETWORK}

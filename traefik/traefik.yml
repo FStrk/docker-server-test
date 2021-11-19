@@ -1,0 +1,25 @@
+## Static configuration of Traefik
+
+log:
+  level: INFO
+
+# Enable docker API on port 8080 for testing
+# DO NOT USE IN PRODUCTION
+api:
+  insecure: true
+  dashboard: true
+
+entryPoints:
+  # Traefik will listen to incoming requests on port 80 (HTTP)
+  web:
+    address: ":80"
+
+providers:
+  # Enabling docker provider
+  docker:
+    # Tell traefik to listen on the docker socket
+    # SECURITY ISSUE
+    endpoint: "unix:///var/run/docker.sock"
+    # Do not expose containers unless explicitly told
+    exposedByDefault: false
+
