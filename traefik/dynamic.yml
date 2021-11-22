@@ -1,0 +1,37 @@
+# Dynamic configuration of Traefik
+
+http:
+  
+  middlewares:
+
+    # Redirect to https
+    redirect-to-https:
+      redirectScheme:
+        scheme: https
+        permanent: true
+
+    # Authentification
+    auth-middleware:
+      basicAuth:
+        usersFile: "/.htaccess"
+    
+    # Security headers
+    security-headers:
+      headers: 
+        referrerPolicy: no-referrer
+        forceSTSHeader: true
+        stsSeconds: 31536000
+        stsIncludeSubdomains: true
+        stsPreload: false
+        contentTypeNosniff: true
+        browserXssFilter: true
+        customFrameOptionsValue: SAMEORIGIN
+        customRequestHeaders:
+          X-Forwarded-Proto: https
+    
+    # Nextcloud redirect
+    nextcloud_dav_redirect:
+      replacePathRegex:
+        regex: ^/.well-known/ca(l|rd)dav
+        replacement: /remote.php/dav/
+
