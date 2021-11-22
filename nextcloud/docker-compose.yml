@@ -1,15 +1,8 @@
 version: '3'
 
-# Todos:
-# Use sockets for redis and fpm
-# Network icc
-
-# Client push
-# Traefik
-
 services:
   db:
-    image: mariadb:10.5
+    image: mariadb:${DB_TAG}
     command: --transaction-isolation=READ-COMMITTED --binlog-format=ROW
     restart: always
     volumes:
@@ -29,7 +22,7 @@ services:
       - nc-tier
 
   redis:
-    image: redis:5.0.14-alpine
+    image: redis:${REDIS_TAG}
     restart: always
     volumes:
       - /etc/localtime:/etc/localtime:ro
@@ -40,7 +33,11 @@ services:
       - nc-tier
 
   app:
-    build: ./nextcloud
+    build: 
+      context: ./nextcloud
+      dockerfile: Dockerfile
+      args:
+        TAG: ${NEXTCLOUD_TAG}
     restart: always
     volumes:
       - /etc/localtime:/etc/localtime:ro
@@ -74,18 +71,20 @@ services:
       - PM_MAX_CHILDREN=100
       - PM_MAX_REQUESTS=0
       # Reverse proxy
-      - TRUSTED_PROXIES=172.23.0.4/16
-      - OVERWRITEPROTOCOL=http
-      - OVERWRITEHOST=cloud.$DOMAIN
+      - TRUSTED_PROXIES=web
+      - NEXTCLOUD_TRUSTED_DOMAINS=cloud.localhost
     depends_on:
       - db
       - redis
     networks:
       - nc-tier
-      - proxy-tier
 
   cron:
-    build: ./nextcloud
+    build: 
+      context: ./nextcloud
+      dockerfile: Dockerfile
+      args:
+        TAG: ${NEXTCLOUD_TAG}
     restart: always
     volumes:
       - /etc/localtime:/etc/localtime:ro
@@ -102,10 +101,12 @@ services:
       - nc-tier
   
   web:
-    build: ./web
+    build: 
+      context: ./web
+      dockerfile: Dockerfile
+      args:
+        TAG: ${NGINX_TAG}
     restart: always
-    #ports:
-    #  - 127.0.0.1:80:80
     volumes:
       - /etc/localtime:/etc/localtime:ro
       - nextcloud-web:/var/www/html:ro
@@ -113,13 +114,28 @@ services:
       - app
     networks:
       - proxy-tier
+      - nc-tier
+
     labels:
       # Explicitly tell traefik to expose this container
       - "traefik.enable=true"
-      # The domain the service will respond to
-      - "traefik.http.routers.web.rule=Host(`cloud.$DOMAIN`)"
-      # Allow request only from the predefined entrypoint
-      - "traefik.http.routers.web.entrypoints=web"
+
+      # Redirect HTTP to HTTPS
+      - "traefik.http.routers.nextcloud-redirect.rule=hostregexp(`{host:.+}`)"
+      - "traefik.http.routers.nextcloud-redirect.entrypoints=web"
+      - "traefik.http.routers.nextcloud-redirect.middlewares=redirect-to-https@file"
+
+      # HTTPS
+      # Create a router listening on websecure entrypoint
+      - "traefik.http.routers.nextcloud-router.entrypoints=websecure"
+      # Enable TLS
+      - "traefik.http.routers.nextcloud-router.tls=true"
+      # The domains the router will respond to
+      - "traefik.http.routers.nextcloud-router.rule=Host(`$NEXTCLOUD_DOMAIN`)"
+
+      # Middlewares
+      - "traefik.http.routers.nextcloud-router.middlewares=nextcloud_dav_redirect@file, security-headers@file"
+      
 
 volumes:
   db:
@@ -147,7 +163,9 @@ secrets:
 networks:
   proxy-tier:
     name: ${PROXY_NETWORK}
+    external: true
   nc-tier:
     driver: bridge
+
 
   

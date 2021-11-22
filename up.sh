@@ -1,4 +1,15 @@
 #!/bin/sh
 
-sudo docker compose --env-file ./proxy.env -f ./traefik/docker-compose.yml up -d
-sudo docker compose --env-file ./proxy.env -f ./nextcloud/docker-compose.yml up -d
+cd ./traefik
+cat ./tags.env ../network.env > ./tmp.env
+sudo docker compose --env-file ./tmp.env up -d
+rm ./tmp.env
+cd ..
+
+cd ./nextcloud
+cat ./tags.env ../network.env > ./tmp.env
+sudo docker compose --env-file ./tmp.env up -d
+rm ./tmp.env
+cd ..
+
+

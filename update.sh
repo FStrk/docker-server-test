@@ -1,11 +1,13 @@
 #!/bin/sh
 
-cd ./traefik/
-sudo docker compose --env-file ../proxy.env down
-sudo docker compose --env-file ../proxy.env build --pull
+cd ./traefik
+cat ./tags.env ../network.env > ./tmp.env
+sudo docker compose --env-file ./tmp.env build --pull
+rm ./tmp.env
 cd ..
 
-cd ./nextcloud/
-sudo docker compose --env-file ../proxy.env down
-sudo docker compose --env-file ../proxy.env build --pull
+cd ./nextcloud
+cat ./tags.env ../network.env > ./tmp.env
+sudo docker compose --env-file ./tmp.env build --pull
+rm ./tmp.env
 cd ..

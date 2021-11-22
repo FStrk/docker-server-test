@@ -1,4 +1,6 @@
-FROM nextcloud:22.2.3-fpm-alpine
+ARG TAG
+
+FROM nextcloud:${TAG}
 
 # Add SVG-support for Imagick
 RUN set -ex; \
