@@ -1,7 +1,7 @@
 ## Static configuration of Traefik
 
 log:
-  level: INFO
+  level: "INFO"
 
 # Enable docker API on port 8080 for testing
 # DO NOT USE IN PRODUCTION
@@ -13,6 +13,8 @@ entryPoints:
   # Traefik will listen to incoming requests on port 80 (HTTP)
   web:
     address: ":80"
+  websecure:
+    address: ":443"
 
 providers:
   # Enabling docker provider
@@ -22,4 +24,31 @@ providers:
     endpoint: "unix:///var/run/docker.sock"
     # Do not expose containers unless explicitly told
     exposedByDefault: false
+    # Tell traefik the name of the proxy network
+    network: "proxy-tier"
+  
+  # Dynamic configuration
+  file:
+    filename: "/dynamic.yml"
+    watch: true
+
+# certificateResolvers:
+#   lets-encr:
+#     acme:
+#       #caServer: "https://acme-staging-v02.api.letsencrypt.org/directory"
+#       storage: "acme.json"
+#       email: felix.staerk@posteo.de
+#       httpChallenge:
+#         entryPoint: web
+
+tls:
+  certificates:
+    - certFile: "/certs/localhost.crt"
+      keyFile: "/certs/localhost.key"
+    - certFile: "/certs/cloud.localhost.crt"
+      keyFile: "/certs/cloud.localhost.key"
+  options:
+    modern:
+      minVersion: "VersionTLS13"
+      sniStrict: true
 
